@@ -43,8 +43,8 @@ st.title("Chess Bot")
 st.write("Jogue contra o bot de xadrez!")
 
 
-if "board" not in st.session_state:
-    st.session_state.board = chess.Board()
+# if "board" not in st.session_state:
+#     st.session_state.board = chess.Board()
 
 
 def bot_move():
