@@ -98,3 +98,9 @@ else:
 if st.button("Reiniciar Jogo"):
     st.session_state.board.reset()
     st.experimental_rerun()
+
+FEN = st.session_state.board.fen()
+
+f = open("fen.txt", "a")
+f.write(FEN)
+f.close()
