@@ -5,7 +5,6 @@ import torch
 from chess_engine import ChessMovePredictionModel
 import random
 import os
-from gemini import coach_answer
 import base64
 
 
@@ -162,13 +161,6 @@ with col2:
 
 if not st.session_state.game_over:
     if st.session_state.board.turn == chess.WHITE:
-
-        # If white is to move, first we find the state of the board in FEN notation
-        fen = st.session_state.board.fen()
-        # Then we pass this notation into a txt file
-        # Finally, we ask for our AI coach to suggest us some moves
-        coach_answer(fen)
-
         user_move = st.text_input("Digite seu movimento (ex: e2e4):")
         if st.button("Enviar Movimento"):
             move = None
@@ -195,6 +187,9 @@ if st.button("Reiniciar Jogo"):
     st.session_state.game_over = False
     st.session_state.end_message = ""
     st.experimental_rerun()
+
+
+#PARTE FRONTEND
 
 # Custom CSS for styling the cards and layout
 st.markdown(
