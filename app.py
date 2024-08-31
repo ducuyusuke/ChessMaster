@@ -5,13 +5,10 @@ import torch
 from chess_engine import ChessMovePredictionModel
 import random
 import os
-from gemini import coach_answer
 import base64
 import chess.engine
 from evaluation_helpers import format_evaluation, interpret_evaluation, evaluate_move
-
-
-
+from gemini import coach_answer
 
 # Function to convert board to tensor
 def board_to_tensor(board):
@@ -171,13 +168,17 @@ with col2:
 if not st.session_state.game_over:
     if st.session_state.board.turn == chess.WHITE:
 
+        fen = st.session_state.board.fen()
+        print(fen)
 
         user_move = st.text_input("Digite seu movimento (ex: e2e4):")
         if st.button("Enviar Movimento"):
             move = None
             try:
                 move = chess.Move.from_uci(user_move)
+                print(move)
                 if move in st.session_state.board.legal_moves:
+                    coach_answer(fen, move)
                     st.session_state.board.push(move)
 
                     raw_evaluation = evaluate_move(st.session_state.board)
@@ -206,6 +207,9 @@ if st.button("Reiniciar Jogo"):
     st.session_state.game_over = False
     st.session_state.end_message = ""
     st.experimental_rerun()
+
+
+#PARTE FRONTEND
 
 # Custom CSS for styling the cards and layout
 st.markdown(
