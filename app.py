@@ -9,6 +9,7 @@ import random
 import streamlit as st
 import streamlit.components.v1 as components
 import os
+from gemini_test import coach_answer
 
 def board_to_tensor(board):
     tensor = torch.zeros((12, 8, 8))
@@ -76,6 +77,14 @@ st.markdown(f'<div>{board_svg}</div>', unsafe_allow_html=True)
 
 
 if st.session_state.board.turn == chess.WHITE:
+    # If white is to move, first we find the state of the board in FEN notation
+    FEN = st.session_state.board.fen()
+    # Then we pass this notation into a txt file
+    f = open("fen.txt", "w")
+    f.write(FEN)
+    f.close()
+    # Finally, we ask for our AI coach to suggest us some moves
+    coach_answer()
 
     user_move = st.text_input("Digite seu movimento (ex: e2e4):")
 
@@ -98,9 +107,3 @@ else:
 if st.button("Reiniciar Jogo"):
     st.session_state.board.reset()
     st.experimental_rerun()
-
-FEN = st.session_state.board.fen()
-
-f = open("fen.txt", "a")
-f.write(FEN)
-f.close()
