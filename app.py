@@ -7,6 +7,7 @@ import random
 import os
 import base64
 
+
 # Function to convert board to tensor
 def board_to_tensor(board):
     tensor = torch.zeros((12, 8, 8))
@@ -162,14 +163,17 @@ if not st.session_state.game_over:
     if st.session_state.board.turn == chess.WHITE:
         user_move = st.text_input("Digite seu movimento (ex: e2e4):")
         if st.button("Enviar Movimento"):
+            move = None
             try:
                 move = chess.Move.from_uci(user_move)
                 if move in st.session_state.board.legal_moves:
                     st.session_state.board.push(move)
                     st.experimental_rerun()
+                else:
+                    st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
 
-            except:
-                st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
+            except Exception as e:
+                st.write(f"Erro ao processar o movimento: {str(e)}")
     else:
         st.write("Turno do bot...")
         bot_move()
