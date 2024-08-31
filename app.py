@@ -36,77 +36,28 @@ model = ChessMovePredictionModel()
 model.load_state_dict(torch.load('chess_model.pth'))
 model.eval()
 
-# Custom CSS for styling the cards and layout
-st.markdown(
-    """
-    <style>
-    .suggested-moves-title {
-        margin-bottom: 5px;
-        font-size: 24px;
-        font-weight: bold;
-        margin-top: -10px;
-    }
-    .suggested-moves-container {
-        display: flex;
-        justify-content: space-between;
-    }
-    .suggested-move-card {
-        background-color: #333333;
-        padding: 10px;
-        border-radius: 8px;
-        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
-        text-align: center;
-        width: 100%;
-        max-width: 150px;
-        position: relative;
-    }
-    .suggested-move-card .top-line {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-    }
-    .suggested-move-card img {
-        width: 60px;
-        height: 60px; /* Fixed height for the images */
-        object-fit: contain;
-        margin-bottom: 5px;
-    }
-    .suggested-move-card h4 {
-        margin: 0;
-        color: #ffffff;
-        font-size: 16px;
-        padding: 0;
-    }
-    .suggested-move-card hr {
-        margin: 0;
-        border: none;
-        border-top: 1px solid #555555;
-    }
-    .suggested-move-card p {
-        margin: 0;
-        color: green;
-        font-size: 14px;
-    }
-    .suggested-move-card .score-label {
-        margin-top: 0.5px;
-        font-size: 12px;
-        color: #cccccc;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
 # Streamlit app layout
 st.title("Chess Bot")
-st.write("Jogue contra o bot de xadrez!")
+st.write("Jogue contra o chess master!")
 
 if "board" not in st.session_state:
     st.session_state.board = chess.Board()
+if "game_over" not in st.session_state:
+    st.session_state.game_over = False
+if "end_message" not in st.session_state:
+    st.session_state.end_message = ""
 
 def bot_move():
+    if st.session_state.board.is_checkmate():
+        st.session_state.end_message = "Xeque mate! O jogo acabou."
+        st.session_state.game_over = True
+        return
+    elif st.session_state.board.is_stalemate():
+        st.session_state.end_message = "Empate! O jogo acabou."
+        st.session_state.game_over = True
+        return
+
+
     board_tensor = board_to_tensor(st.session_state.board)
     with torch.no_grad():
         output = model(board_tensor)
@@ -123,7 +74,6 @@ def bot_move():
 
         st.session_state.board.push(best_move)
 
-# Function to load and encode image for embedding in HTML
 def load_image(image_path):
     with open(image_path, "rb") as image_file:
         encoded_string = base64.b64encode(image_file.read()).decode()
@@ -208,18 +158,94 @@ with col2:
         move_history += f"{i+1}. {move.uci()}\n"
     st.text_area("Moves", move_history, height=100)
 
-# User input and bot move logic
-if st.session_state.board.turn == chess.WHITE:
-    user_move = st.text_input("Enter your move (e.g., e2e4):")
-    if st.button("Submit Move"):
-        try:
-            move = chess.Move.from_uci(user_move)
-            if move in st.session_state.board.legal_moves:
-                st.session_state.board.push(move)
-                st.experimental_rerun()
-        except:
-            st.write("Invalid move. Use the correct notation (e.g., e2e4).")
+if not st.session_state.game_over:
+    if st.session_state.board.turn == chess.WHITE:
+        user_move = st.text_input("Digite seu movimento (ex: e2e4):")
+        if st.button("Enviar Movimento"):
+            try:
+                move = chess.Move.from_uci(user_move)
+                if move in st.session_state.board.legal_moves:
+                    st.session_state.board.push(move)
+                    st.experimental_rerun()
+
+            except:
+                st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
+    else:
+        st.write("Turno do bot...")
+        bot_move()
+        st.experimental_rerun()
+
 else:
-    st.write("Bot's turn...")
-    bot_move()
+    st.write(st.session_state.end_message)
+
+if st.button("Reiniciar Jogo"):
+    st.session_state.board.reset()
+    st.session_state.game_over = False
+    st.session_state.end_message = ""
     st.experimental_rerun()
+
+
+#PARTE FRONTEND
+
+# Custom CSS for styling the cards and layout
+st.markdown(
+    """
+    <style>
+    .suggested-moves-title {
+        margin-bottom: 5px;
+        font-size: 24px;
+        font-weight: bold;
+        margin-top: -10px;
+    }
+    .suggested-moves-container {
+        display: flex;
+        justify-content: space-between;
+    }
+    .suggested-move-card {
+        background-color: #333333;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        width: 100%;
+        max-width: 150px;
+        position: relative;
+    }
+    .suggested-move-card .top-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+    }
+    .suggested-move-card img {
+        width: 60px;
+        height: 60px; /* Fixed height for the images */
+        object-fit: contain;
+        margin-bottom: 5px;
+    }
+    .suggested-move-card h4 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 16px;
+        padding: 0;
+    }
+    .suggested-move-card hr {
+        margin: 0;
+        border: none;
+        border-top: 1px solid #555555;
+    }
+    .suggested-move-card p {
+        margin: 0;
+        color: green;
+        font-size: 14px;
+    }
+    .suggested-move-card .score-label {
+        margin-top: 0.5px;
+        font-size: 12px;
+        color: #cccccc;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
