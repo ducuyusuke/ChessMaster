@@ -7,6 +7,10 @@ import random
 import os
 from gemini import coach_answer
 import base64
+import chess.engine
+from evaluation_helpers import format_evaluation, interpret_evaluation, evaluate_move
+
+
 
 
 # Function to convert board to tensor
@@ -48,6 +52,8 @@ if "game_over" not in st.session_state:
     st.session_state.game_over = False
 if "end_message" not in st.session_state:
     st.session_state.end_message = ""
+if "evaluation_message" not in st.session_state:
+    st.session_state.evaluation_message = ""
 
 def bot_move():
     if st.session_state.board.is_checkmate():
@@ -160,14 +166,11 @@ with col2:
         move_history += f"{i+1}. {move.uci()}\n"
     st.text_area("Moves", move_history, height=100)
 
+    st.write(st.session_state.evaluation_message)
+
 if not st.session_state.game_over:
     if st.session_state.board.turn == chess.WHITE:
 
-        # If white is to move, first we find the state of the board in FEN notation
-        fen = st.session_state.board.fen()
-        # Then we pass this notation into a txt file
-        # Finally, we ask for our AI coach to suggest us some moves
-        coach_answer(fen)
 
         user_move = st.text_input("Digite seu movimento (ex: e2e4):")
         if st.button("Enviar Movimento"):
@@ -176,6 +179,14 @@ if not st.session_state.game_over:
                 move = chess.Move.from_uci(user_move)
                 if move in st.session_state.board.legal_moves:
                     st.session_state.board.push(move)
+
+                    raw_evaluation = evaluate_move(st.session_state.board)
+                    formatted_evaluation = format_evaluation(raw_evaluation)
+                    interpreted_evaluation = interpret_evaluation(raw_evaluation)
+                    st.session_state.evaluation_message = (
+                        f"Avaliação do último movimento do humano: {interpreted_evaluation} ({formatted_evaluation})"
+                    )
+
                     st.experimental_rerun()
                 else:
                     st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
