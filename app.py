@@ -40,7 +40,7 @@ model.eval()
 
 
 st.title("Chess Bot")
-st.write("Jogue contra o bot de xadrez!")
+st.write("Jogue contra o chess master!")
 
 
 if "board" not in st.session_state:
