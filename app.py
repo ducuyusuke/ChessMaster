@@ -45,9 +45,21 @@ st.write("Jogue contra o bot de xadrez!")
 
 if "board" not in st.session_state:
     st.session_state.board = chess.Board()
-
+if "game_over" not in st.session_state:
+    st.session_state.game_over = False
+if "end_message" not in st.session_state:
+    st.session_state.end_message = ""
 
 def bot_move():
+    if st.session_state.board.is_checkmate():
+        st.session_state.end_message = "Xeque mate! O jogo acabou."
+        st.session_state.game_over = True
+        return
+    elif st.session_state.board.is_stalemate():
+        st.session_state.end_message = "Empate! O jogo acabou."
+        st.session_state.game_over = True
+        return
+
 
     board_tensor = board_to_tensor(st.session_state.board)
     with torch.no_grad():
@@ -71,30 +83,30 @@ def bot_move():
         st.session_state.board.push(best_move)
 
 
+
 board_svg = chess.svg.board(board=st.session_state.board)
 st.markdown(f'<div>{board_svg}</div>', unsafe_allow_html=True)
 
-
-if st.session_state.board.turn == chess.WHITE:
-
-    user_move = st.text_input("Digite seu movimento (ex: e2e4):")
-
-    if st.button("Enviar Movimento"):
-        try:
-            move = chess.Move.from_uci(user_move)
-            if move in st.session_state.board.legal_moves:
-                st.session_state.board.push(move)
-                st.experimental_rerun()
-        except:
-            st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
-
+if not st.session_state.game_over:
+    if st.session_state.board.turn == chess.WHITE:
+        user_move = st.text_input("Digite seu movimento (ex: e2e4):")
+        if st.button("Enviar Movimento"):
+            try:
+                move = chess.Move.from_uci(user_move)
+                if move in st.session_state.board.legal_moves:
+                    st.session_state.board.push(move)
+                    st.experimental_rerun()
+            except:
+                st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
+    else:
+        st.write("Turno do bot...")
+        bot_move()
+        st.experimental_rerun()
 else:
-
-    st.write("Turno do bot...")
-    bot_move()
-    st.experimental_rerun()
-
+    st.write(st.session_state.end_message)
 
 if st.button("Reiniciar Jogo"):
     st.session_state.board.reset()
+    st.session_state.game_over = False
+    st.session_state.end_message = ""
     st.experimental_rerun()
