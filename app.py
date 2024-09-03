@@ -41,7 +41,7 @@ st.markdown(
     """
     <style>
     .suggested-moves-title {
-        margin-bottom: 5px;
+        margin-bottom: px;
         font-size: 24px;
         font-weight: bold;
         margin-top: -10px;

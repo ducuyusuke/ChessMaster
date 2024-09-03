@@ -1,0 +1,111 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+    font-family: sans-serif; /* Apply sans-serif font to the entire document */
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.chessboard-wrapper {
+    background-color: black; /* Black margin around the board */
+    padding: 10px; /* Adjust padding to control the size of the margin */
+}
+
+.column-labels {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between; /* Ensure labels are evenly spaced */
+    margin-bottom: -1px; /* Adjust to fix border overlap */
+}
+
+.row-labels {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Ensure labels are evenly spaced */
+    margin-right: -1px; /* Adjust to fix border overlap */
+}
+
+.chessboard-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.chessboard {
+    display: grid;
+    grid-template-columns: repeat(8, 60px);
+    grid-template-rows: repeat(8, 60px);
+    border: 2px solid #333;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.chessboard div {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* Define the light and dark square styles */
+.light-square {
+    background-color: #f0d9b5; /* Light wood color */
+}
+
+.dark-square {
+    background-color: #b58863; /* Dark wood color */
+}
+
+.piece {
+    width: 50px;
+    height: 50px;
+    background-size: cover;
+    cursor: grab;
+}
+
+.piece:active {
+    cursor: grabbing;
+}
+
+.label {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: white; /* Set label text color to white */
+    background-color: transparent; /* Remove background color */
+    font-family: sans-serif; /* Use sans-serif font */
+}
+
+/* Top and Bottom Labels */
+.column-labels .label {
+    height: 30px; /* Height for top and bottom labels */
+    width: 60px; /* Ensure width matches chessboard squares */
+}
+
+/* Left and Right Labels */
+.row-labels .label {
+    width: 30px; /* Width for side labels */
+    height: 60px; /* Ensure height matches chessboard squares */
+}
+
+/* Adjust label for the corners */
+.column-labels .label:first-child,
+.column-labels .label:last-child {
+    width: 30px; /* Adjust width for the corners */
+}
+
+.row-labels .label:first-child,
+.row-labels .label:last-child {
+    height: 30px; /* Adjust height for the corners */
+}
