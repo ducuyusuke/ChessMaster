@@ -162,14 +162,14 @@ with col2:
     for i, move in enumerate(moves):
         move_history += f"{i+1}. {move.uci()}\n"
     st.text_area("Moves", move_history, height=100)
-
+    print(move_history)
+    coach_answer(move_history)
     st.write(st.session_state.evaluation_message)
 
 if not st.session_state.game_over:
     if st.session_state.board.turn == chess.WHITE:
 
-        fen = st.session_state.board.fen()
-        print(fen)
+
 
         user_move = st.text_input("Digite seu movimento (ex: e2e4):")
         if st.button("Enviar Movimento"):
@@ -178,16 +178,15 @@ if not st.session_state.game_over:
                 move = chess.Move.from_uci(user_move)
                 print(move)
                 if move in st.session_state.board.legal_moves:
-                    coach_answer(fen, move)
                     st.session_state.board.push(move)
 
-                    raw_evaluation = evaluate_move(st.session_state.board)
-                    formatted_evaluation = format_evaluation(raw_evaluation)
-                    interpreted_evaluation = interpret_evaluation(raw_evaluation)
-                    st.session_state.evaluation_message = (
-                        f"Avaliação do último movimento do humano: {interpreted_evaluation} ({formatted_evaluation})"
-                    )
 
+                    # raw_evaluation = evaluate_move(st.session_state.board)
+                    # formatted_evaluation = format_evaluation(raw_evaluation)
+                    # interpreted_evaluation = interpret_evaluation(raw_evaluation)
+                    # st.session_state.evaluation_message = (
+                    #     f"Avaliação do último movimento do humano: {interpreted_evaluation} ({formatted_evaluation})"
+                    # )
                     st.experimental_rerun()
                 else:
                     st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
