@@ -6,8 +6,9 @@ from chess_engine import ChessMovePredictionModel
 import random
 import os
 import base64
+from MiniMax import Minimax
 
-# Function to convert board to tensor
+
 def board_to_tensor(board):
     tensor = torch.zeros((12, 8, 8))
     piece_map = board.piece_map()
@@ -31,10 +32,8 @@ def board_to_tensor(board):
 
     return tensor.unsqueeze(0)
 
-# Load the model
-model = ChessMovePredictionModel()
-model.load_state_dict(torch.load('chess_model.pth'))
-model.eval()
+
+mnmx = Minimax(4)
 
 # Streamlit app layout
 st.title("Chess Bot")
@@ -47,6 +46,7 @@ if "game_over" not in st.session_state:
 if "end_message" not in st.session_state:
     st.session_state.end_message = ""
 
+
 def bot_move():
     if st.session_state.board.is_checkmate():
         st.session_state.end_message = "Xeque mate! O jogo acabou."
@@ -57,21 +57,11 @@ def bot_move():
         st.session_state.game_over = True
         return
 
-
-    board_tensor = board_to_tensor(st.session_state.board)
-    with torch.no_grad():
-        output = model(board_tensor)
-        best_move = None
-        best_move_idx = torch.argmax(output).item()
-        from_square = best_move_idx // 64
-        to_square = best_move_idx % 64
-        predicted_move = chess.Move(from_square, to_square)
-
-        if predicted_move in st.session_state.board.legal_moves:
-            best_move = predicted_move
-        else:
+    with torch.no_grad():      
+        best_move = mnmx.get_best_move(depth=4, board=st.session_state.board, time_limit=7)
+        if best_move not in st.session_state.board.legal_moves:
             best_move = random.choice(list(st.session_state.board.legal_moves))
-
+        
         st.session_state.board.push(best_move)
 
 def load_image(image_path):
@@ -89,11 +79,9 @@ with col1:
 
 # Right column: Controls
 with col2:
-    # Suggested Moves section with four cards side by side
     st.markdown('<div class="suggested-moves-title">Suggested Moves</div>', unsafe_allow_html=True)
     st.markdown('<div class="suggested-moves-container">', unsafe_allow_html=True)
 
-    # Create the cards
     card_col1, card_col2, card_col3, card_col4 = st.columns(4)
 
     # Card 1
@@ -150,30 +138,33 @@ with col2:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Game History section
     st.header("Game History")
     moves = st.session_state.board.move_stack
     move_history = ""
     for i, move in enumerate(moves):
         move_history += f"{i+1}. {move.uci()}\n"
     st.text_area("Moves", move_history, height=100)
-
+    
 if not st.session_state.game_over:
     if st.session_state.board.turn == chess.WHITE:
         user_move = st.text_input("Digite seu movimento (ex: e2e4):")
         if st.button("Enviar Movimento"):
+            move = None
             try:
                 move = chess.Move.from_uci(user_move)
                 if move in st.session_state.board.legal_moves:
                     st.session_state.board.push(move)
                     st.experimental_rerun()
+                else:
+                    st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
 
-            except:
-                st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
+            except Exception as e:
+                st.write(f"Erro ao processar o movimento: {str(e)}")
     else:
         st.write("Turno do bot...")
         bot_move()
         st.experimental_rerun()
+    
 
 else:
     st.write(st.session_state.end_message)
@@ -185,9 +176,9 @@ if st.button("Reiniciar Jogo"):
     st.experimental_rerun()
 
 
+
 #PARTE FRONTEND
 
-# Custom CSS for styling the cards and layout
 st.markdown(
     """
     <style>
