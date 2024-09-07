@@ -7,7 +7,7 @@ import random
 import os
 import base64
 import chess.engine
-from evaluation_helpers import format_evaluation, interpret_evaluation, evaluate_move
+from evaluation_helpers import format_evaluation, interpret_evaluation, evaluate_move, suggest_best_moves_for_white
 from gemini import coach_answer
 
 # Function to convert board to tensor
@@ -62,7 +62,6 @@ def bot_move():
         st.session_state.game_over = True
         return
 
-
     board_tensor = board_to_tensor(st.session_state.board)
     with torch.no_grad():
         output = model(board_tensor)
@@ -85,83 +84,49 @@ def load_image(image_path):
     return f"data:image/png;base64,{encoded_string}"
 
 # Layout: Chess board on the left, controls on the right
-col1, col2 = st.columns([3, 2])
+col1, col2 = st.columns([3, 1])  # Mantém a proporção para o tabuleiro e a coluna direita
+
+if "board" not in st.session_state:
+    st.session_state.board = chess.Board()
 
 # Left column: Chess board
 with col1:
     board_svg = chess.svg.board(board=st.session_state.board)
     st.markdown(f'<div>{board_svg}</div>', unsafe_allow_html=True)
 
-# Right column: Controls
+# Right column: Suggested moves and Game History
 with col2:
-    # Suggested Moves section with four cards side by side
-    st.markdown('<div class="suggested-moves-title">Suggested Moves</div>', unsafe_allow_html=True)
-    st.markdown('<div class="suggested-moves-container">', unsafe_allow_html=True)
+    st.markdown('<div class="suggested-moves-title">Sugestões de Movimentos</div>', unsafe_allow_html=True)
+    best_moves = suggest_best_moves_for_white(st.session_state.board, num_moves=2)
 
-    # Create the cards
-    card_col1, card_col2, card_col3, card_col4 = st.columns(4)
+    col_moves1, col_moves2 = st.columns(2)  # Ajusta as sugestões de movimentos para ficarem lado a lado
 
-    # Card 1
-    with card_col1:
-        st.markdown(f'''
-            <div class="suggested-move-card">
-                <div class="top-line" style="background-color: green;"></div>
-                <img src="{load_image(os.path.join("images", "Group 6.png"))}" alt="Piece">
-                <h4>Bg4</h4>
-                <hr>
-                <p>92%</p>
-                <div class="score-label">Score</div>
-            </div>
-        ''', unsafe_allow_html=True)
+    if len(best_moves) > 0:
+        with col_moves1:
+            st.markdown(f'''
+                <div class="suggested-move-card">
+                    <h4>{best_moves[0][0].uci()}</h4>
+                    <p>Score: {best_moves[0][1]:.2f}</p>
+                </div>
+            ''', unsafe_allow_html=True)
 
-    # Card 2
-    with card_col2:
-        st.markdown(f'''
-            <div class="suggested-move-card">
-                <div class="top-line" style="background-color: green;"></div>
-                <img src="{load_image(os.path.join("images", "Group 7.png"))}" alt="Piece">
-                <h4>Bg4</h4>
-                <hr>
-                <p>92%</p>
-                <div class="score-label">Score</div>
-            </div>
-        ''', unsafe_allow_html=True)
+    if len(best_moves) > 1:
+        with col_moves2:
+            st.markdown(f'''
+                <div class="suggested-move-card">
+                    <h4>{best_moves[1][0].uci()}</h4>
+                    <p>Score: {best_moves[1][1]:.2f}</p>
+                </div>
+            ''', unsafe_allow_html=True)
 
-    # Card 3
-    with card_col3:
-        st.markdown(f'''
-            <div class="suggested-move-card">
-                <div class="top-line" style="background-color: green;"></div>
-                <img src="{load_image(os.path.join("images", "Group 8.png"))}" alt="Piece">
-                <h4>Bg4</h4>
-                <hr>
-                <p>92%</p>
-                <div class="score-label">Score</div>
-            </div>
-        ''', unsafe_allow_html=True)
-
-    # Card 4
-    with card_col4:
-        st.markdown(f'''
-            <div class="suggested-move-card">
-                <div class="top-line" style="background-color: green;"></div>
-                <img src="{load_image(os.path.join("images", "Group 9.png"))}" alt="Piece">
-                <h4>Bg4</h4>
-                <hr>
-                <p>92%</p>
-                <div class="score-label">Score</div>
-            </div>
-        ''', unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Game History section
+    # Game History section logo abaixo
+    st.markdown("---")  # Linha separadora
     st.header("Game History")
     moves = st.session_state.board.move_stack
     move_history = ""
     for i, move in enumerate(moves):
         move_history += f"{i+1}. {move.uci()}\n"
-    st.text_area("Moves", move_history, height=100)
+    st.text_area("Moves", move_history, height=100, key="unique_game_history")
 
     st.write(st.session_state.evaluation_message)
 
@@ -208,66 +173,21 @@ if st.button("Reiniciar Jogo"):
     st.session_state.end_message = ""
     st.experimental_rerun()
 
-
-#PARTE FRONTEND
-
-# Custom CSS for styling the cards and layout
+# CSS Customization for the layout
 st.markdown(
     """
     <style>
     .suggested-moves-title {
-        margin-bottom: 5px;
-        font-size: 24px;
+        font-size: 20px;
         font-weight: bold;
-        margin-top: -10px;
-    }
-    .suggested-moves-container {
-        display: flex;
-        justify-content: space-between;
     }
     .suggested-move-card {
-        background-color: #333333;
+        background-color: #333;
         padding: 10px;
         border-radius: 8px;
-        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        margin-bottom: 10px;
+        color: white;
         text-align: center;
-        width: 100%;
-        max-width: 150px;
-        position: relative;
-    }
-    .suggested-move-card .top-line {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-    }
-    .suggested-move-card img {
-        width: 60px;
-        height: 60px; /* Fixed height for the images */
-        object-fit: contain;
-        margin-bottom: 5px;
-    }
-    .suggested-move-card h4 {
-        margin: 0;
-        color: #ffffff;
-        font-size: 16px;
-        padding: 0;
-    }
-    .suggested-move-card hr {
-        margin: 0;
-        border: none;
-        border-top: 1px solid #555555;
-    }
-    .suggested-move-card p {
-        margin: 0;
-        color: green;
-        font-size: 14px;
-    }
-    .suggested-move-card .score-label {
-        margin-top: 0.5px;
-        font-size: 12px;
-        color: #cccccc;
     }
     </style>
     """,
