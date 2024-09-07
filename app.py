@@ -4,9 +4,7 @@ import chess.svg
 import torch
 from chess_engine import ChessMovePredictionModel
 import random
-import os
 import base64
-import chess.engine
 from evaluation_helpers import format_evaluation, interpret_evaluation, evaluate_move
 from gemini import coach_answer
 
@@ -62,7 +60,6 @@ def bot_move():
         st.session_state.game_over = True
         return
 
-
     board_tensor = board_to_tensor(st.session_state.board)
     with torch.no_grad():
         output = model(board_tensor)
@@ -87,13 +84,49 @@ def load_image(image_path):
 # Layout: Chess board on the left, controls on the right
 col1, col2 = st.columns([3, 2])
 
-# Left column: Chess board
+# Left column: Chess board and user input
 with col1:
     board_svg = chess.svg.board(board=st.session_state.board)
     st.markdown(f'<div>{board_svg}</div>', unsafe_allow_html=True)
 
-# Right column: Controls
+    if not st.session_state.game_over:
+        if st.session_state.board.turn == chess.WHITE:
+            user_move = st.text_input("Digite seu movimento (ex: e2e4):")
+            if st.button("Enviar Movimento"):
+                move = None
+                try:
+                    move = chess.Move.from_uci(user_move)
+                    if move in st.session_state.board.legal_moves:
+                        st.session_state.board.push(move)
+                        st.experimental_rerun()
+                    else:
+                        st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
+                except Exception as e:
+                    st.write(f"Erro ao processar o movimento: {str(e)}")
+        else:
+            st.write("Turno do bot...")
+            bot_move()
+            st.experimental_rerun()
+    else:
+        st.write(st.session_state.end_message)
+
+    if st.button("Reiniciar Jogo"):
+        st.session_state.board.reset()
+        st.session_state.game_over = False
+        st.session_state.end_message = ""
+        st.experimental_rerun()
+
+# Right column: Move Analysis, Suggested Moves, Game History
 with col2:
+    # Move Analysis without the header
+    st.markdown(f'''
+        <div class="move-analysis-card">
+            <div class="top-line" style="background-color: blue;"></div>
+            <div class="piece-icon">&#9817;</div>
+            <p>{coach_answer(st.session_state.board.move_stack)}</p>
+        </div>
+    ''', unsafe_allow_html=True)
+
     # Suggested Moves section with four cards side by side
     st.markdown('<div class="suggested-moves-title">Suggested Moves</div>', unsafe_allow_html=True)
     st.markdown('<div class="suggested-moves-container">', unsafe_allow_html=True)
@@ -106,7 +139,6 @@ with col2:
         st.markdown(f'''
             <div class="suggested-move-card">
                 <div class="top-line" style="background-color: green;"></div>
-                <img src="{load_image(os.path.join("images", "Group 6.png"))}" alt="Piece">
                 <h4>Bg4</h4>
                 <hr>
                 <p>92%</p>
@@ -119,7 +151,6 @@ with col2:
         st.markdown(f'''
             <div class="suggested-move-card">
                 <div class="top-line" style="background-color: green;"></div>
-                <img src="{load_image(os.path.join("images", "Group 7.png"))}" alt="Piece">
                 <h4>Bg4</h4>
                 <hr>
                 <p>92%</p>
@@ -132,7 +163,6 @@ with col2:
         st.markdown(f'''
             <div class="suggested-move-card">
                 <div class="top-line" style="background-color: green;"></div>
-                <img src="{load_image(os.path.join("images", "Group 8.png"))}" alt="Piece">
                 <h4>Bg4</h4>
                 <hr>
                 <p>92%</p>
@@ -145,7 +175,6 @@ with col2:
         st.markdown(f'''
             <div class="suggested-move-card">
                 <div class="top-line" style="background-color: green;"></div>
-                <img src="{load_image(os.path.join("images", "Group 9.png"))}" alt="Piece">
                 <h4>Bg4</h4>
                 <hr>
                 <p>92%</p>
@@ -160,55 +189,10 @@ with col2:
     moves = st.session_state.board.move_stack
     move_history = ""
     for i, move in enumerate(moves):
-        move_history += f"{i+1}. {move.uci()}\n"
-    st.text_area("Moves", move_history, height=100)
-    print(move_history)
-    coach_answer(move_history)
+        move_history += f"{i+1}. {move.uci()} - "
+    move_history = move_history.rstrip(" - ")
+    st.text_area("", move_history, height=50)  # Removed "Moves" text
     st.write(st.session_state.evaluation_message)
-
-if not st.session_state.game_over:
-    if st.session_state.board.turn == chess.WHITE:
-
-
-
-        user_move = st.text_input("Digite seu movimento (ex: e2e4):")
-        if st.button("Enviar Movimento"):
-            move = None
-            try:
-                move = chess.Move.from_uci(user_move)
-                print(move)
-                if move in st.session_state.board.legal_moves:
-                    st.session_state.board.push(move)
-
-
-                    # raw_evaluation = evaluate_move(st.session_state.board)
-                    # formatted_evaluation = format_evaluation(raw_evaluation)
-                    # interpreted_evaluation = interpret_evaluation(raw_evaluation)
-                    # st.session_state.evaluation_message = (
-                    #     f"Avaliação do último movimento do humano: {interpreted_evaluation} ({formatted_evaluation})"
-                    # )
-                    st.experimental_rerun()
-                else:
-                    st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
-
-            except Exception as e:
-                st.write(f"Erro ao processar o movimento: {str(e)}")
-    else:
-        st.write("Turno do bot...")
-        bot_move()
-        st.experimental_rerun()
-
-else:
-    st.write(st.session_state.end_message)
-
-if st.button("Reiniciar Jogo"):
-    st.session_state.board.reset()
-    st.session_state.game_over = False
-    st.session_state.end_message = ""
-    st.experimental_rerun()
-
-
-#PARTE FRONTEND
 
 # Custom CSS for styling the cards and layout
 st.markdown(
@@ -218,7 +202,7 @@ st.markdown(
         margin-bottom: 5px;
         font-size: 24px;
         font-weight: bold;
-        margin-top: -10px;
+        margin-top: 10px;
     }
     .suggested-moves-container {
         display: flex;
@@ -241,12 +225,6 @@ st.markdown(
         width: 100%;
         height: 4px;
     }
-    .suggested-move-card img {
-        width: 60px;
-        height: 60px; /* Fixed height for the images */
-        object-fit: contain;
-        margin-bottom: 5px;
-    }
     .suggested-move-card h4 {
         margin: 0;
         color: #ffffff;
@@ -267,6 +245,36 @@ st.markdown(
         margin-top: 0.5px;
         font-size: 12px;
         color: #cccccc;
+    }
+    
+    .move-analysis-card {
+        background-color: #222222;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        position: relative;
+    }
+
+    .move-analysis-card .top-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+    }
+
+    .move-analysis-card .piece-icon {
+        font-size: 48px;
+        color: white;
+        margin-top: 10px;
+    }
+
+    .move-analysis-card p {
+        color: white;
+        font-size: 14px;
+        margin: 0;
+        margin-top: 10px;
     }
     </style>
     """,
