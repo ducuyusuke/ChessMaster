@@ -4,7 +4,6 @@ import chess.svg
 import torch
 from chess_engine import ChessMovePredictionModel
 import random
-import os
 import base64
 import chess.engine
 from evaluation_helpers import format_evaluation, interpret_evaluation, evaluate_move, suggest_best_moves_for_white
@@ -89,7 +88,7 @@ col1, col2 = st.columns([3, 1])  # Mantém a proporção para o tabuleiro e a co
 if "board" not in st.session_state:
     st.session_state.board = chess.Board()
 
-# Left column: Chess board
+# Left column: Chess board and user input
 with col1:
     board_svg = chess.svg.board(board=st.session_state.board)
     st.markdown(f'<div>{board_svg}</div>', unsafe_allow_html=True)
@@ -125,10 +124,11 @@ with col2:
     moves = st.session_state.board.move_stack
     move_history = ""
     for i, move in enumerate(moves):
-        move_history += f"{i+1}. {move.uci()}\n"
-    st.text_area("Moves", move_history, height=100, key="unique_game_history")
 
+        move_history += f"{i+1}. {move.uci()}\n"
+        st.text_area("", move_history, height=50)  # Removed "Moves" text
     st.write(st.session_state.evaluation_message)
+
 
 if not st.session_state.game_over:
     if st.session_state.board.turn == chess.WHITE:
@@ -180,6 +180,11 @@ st.markdown(
     .suggested-moves-title {
         font-size: 20px;
         font-weight: bold;
+        margin-top: 10px;
+    }
+    .suggested-moves-container {
+        display: flex;
+        justify-content: space-between;
     }
     .suggested-move-card {
         background-color: #333;
@@ -188,6 +193,67 @@ st.markdown(
         margin-bottom: 10px;
         color: white;
         text-align: center;
+        width: 100%;
+        max-width: 150px;
+        position: relative;
+    }
+    .suggested-move-card .top-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+    }
+    .suggested-move-card h4 {
+        margin: 0;
+        color: #ffffff;
+        font-size: 16px;
+        padding: 0;
+    }
+    .suggested-move-card hr {
+        margin: 0;
+        border: none;
+        border-top: 1px solid #555555;
+    }
+    .suggested-move-card p {
+        margin: 0;
+        color: green;
+        font-size: 14px;
+    }
+    .suggested-move-card .score-label {
+        margin-top: 0.5px;
+        font-size: 12px;
+        color: #cccccc;
+    }
+
+    .move-analysis-card {
+        background-color: #222222;
+        padding: 10px;
+        border-radius: 8px;
+        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        position: relative;
+    }
+
+    .move-analysis-card .top-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+    }
+
+    .move-analysis-card .piece-icon {
+        font-size: 48px;
+        color: white;
+        margin-top: 10px;
+    }
+
+    .move-analysis-card p {
+        color: white;
+        font-size: 14px;
+        margin: 0;
+        margin-top: 10px;
     }
     </style>
     """,
