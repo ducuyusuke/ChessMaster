@@ -5,7 +5,8 @@ import torch
 from chess_engine import ChessMovePredictionModel
 import random
 import base64
-from evaluation_helpers import format_evaluation, interpret_evaluation, evaluate_move
+import chess.engine
+from evaluation_helpers import format_evaluation, interpret_evaluation, evaluate_move, suggest_best_moves_for_white
 from gemini import coach_answer
 
 # Function to convert board to tensor
@@ -82,7 +83,10 @@ def load_image(image_path):
     return f"data:image/png;base64,{encoded_string}"
 
 # Layout: Chess board on the left, controls on the right
-col1, col2 = st.columns([3, 2])
+col1, col2 = st.columns([3, 1])  # Mantém a proporção para o tabuleiro e a coluna direita
+
+if "board" not in st.session_state:
+    st.session_state.board = chess.Board()
 
 # Left column: Chess board and user input
 with col1:
@@ -116,91 +120,70 @@ with col1:
         st.session_state.end_message = ""
         st.experimental_rerun()
 
-# Right column: Move Analysis, Suggested Moves, Game History
+
+# Right column: Suggested moves and Game History
 with col2:
-    # Move Analysis without the header
+    # Game History section logo abaixo
+
+    moves = st.session_state.board.move_stack
+    move_history = ""
+    evaluation = ""
+    for i, move in enumerate(moves):
+        move_history += f"{i+1}. {move.uci()} - "
+        if i % 2 == 0:
+            evaluation = coach_answer(move_history)
+
+    move_history = move_history.rstrip(" - ")
+
+
+
+
+
     st.markdown(f'''
         <div class="move-analysis-card">
             <div class="top-line" style="background-color: blue;"></div>
             <div class="piece-icon">&#9817;</div>
-            <p>{coach_answer(st.session_state.board.move_stack)}</p>
+            <p>{evaluation}</p>
         </div>
     ''', unsafe_allow_html=True)
 
     # Suggested Moves section with four cards side by side
     st.markdown('<div class="suggested-moves-title">Suggested Moves</div>', unsafe_allow_html=True)
     st.markdown('<div class="suggested-moves-container">', unsafe_allow_html=True)
+    best_moves = suggest_best_moves_for_white(st.session_state.board, num_moves=2)
 
-    # Create the cards
-    card_col1, card_col2, card_col3, card_col4 = st.columns(4)
+    col_moves1, col_moves2 = st.columns(2)  # Ajusta as sugestões de movimentos para ficarem lado a lado
 
-    # Card 1
-    with card_col1:
-        st.markdown(f'''
-            <div class="suggested-move-card">
-                <div class="top-line" style="background-color: green;"></div>
-                <h4>Bg4</h4>
-                <hr>
-                <p>92%</p>
-                <div class="score-label">Score</div>
-            </div>
-        ''', unsafe_allow_html=True)
+    if len(best_moves) > 0:
+        with col_moves1:
+            st.markdown(f'''
+                <div class="suggested-move-card">
+                    <h4>{best_moves[0][0].uci()}</h4>
+                    <p>Score: {best_moves[0][1]:.2f}</p>
+                </div>
+            ''', unsafe_allow_html=True)
 
-    # Card 2
-    with card_col2:
-        st.markdown(f'''
-            <div class="suggested-move-card">
-                <div class="top-line" style="background-color: green;"></div>
-                <h4>Bg4</h4>
-                <hr>
-                <p>92%</p>
-                <div class="score-label">Score</div>
-            </div>
-        ''', unsafe_allow_html=True)
+    if len(best_moves) > 1:
+        with col_moves2:
+            st.markdown(f'''
+                <div class="suggested-move-card">
+                    <h4>{best_moves[1][0].uci()}</h4>
+                    <p>Score: {best_moves[1][1]:.2f}</p>
+                </div>
+            ''', unsafe_allow_html=True)
 
-    # Card 3
-    with card_col3:
-        st.markdown(f'''
-            <div class="suggested-move-card">
-                <div class="top-line" style="background-color: green;"></div>
-                <h4>Bg4</h4>
-                <hr>
-                <p>92%</p>
-                <div class="score-label">Score</div>
-            </div>
-        ''', unsafe_allow_html=True)
-
-    # Card 4
-    with card_col4:
-        st.markdown(f'''
-            <div class="suggested-move-card">
-                <div class="top-line" style="background-color: green;"></div>
-                <h4>Bg4</h4>
-                <hr>
-                <p>92%</p>
-                <div class="score-label">Score</div>
-            </div>
-        ''', unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
-
-    # Game History section
     st.header("Game History")
-    moves = st.session_state.board.move_stack
-    move_history = ""
-    for i, move in enumerate(moves):
-        move_history += f"{i+1}. {move.uci()} - "
-    move_history = move_history.rstrip(" - ")
-    st.text_area("", move_history, height=50)  # Removed "Moves" text
-    st.write(st.session_state.evaluation_message)
+    st.text_area("", move_history, height=50)
 
-# Custom CSS for styling the cards and layout
+
+
+
+# CSS Customization for the layout
 st.markdown(
     """
     <style>
     .suggested-moves-title {
-        margin-bottom: 5px;
-        font-size: 24px;
+        font-size: 20px;
         font-weight: bold;
         margin-top: 10px;
     }
@@ -209,10 +192,11 @@ st.markdown(
         justify-content: space-between;
     }
     .suggested-move-card {
-        background-color: #333333;
+        background-color: #333;
         padding: 10px;
         border-radius: 8px;
-        box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        margin-bottom: 10px;
+        color: white;
         text-align: center;
         width: 100%;
         max-width: 150px;
@@ -246,7 +230,7 @@ st.markdown(
         font-size: 12px;
         color: #cccccc;
     }
-    
+
     .move-analysis-card {
         background-color: #222222;
         padding: 10px;

@@ -10,11 +10,9 @@ genai.configure(api_key=os.getenv("API_KEY"))
 
 def coach_answer(move_history):
     gemini = genai.GenerativeModel("gemini-pro")
-    response = gemini.generate_content(f"In a Classic Chess game, analyze the board state based on notation: {move_history} and suggest one key move for white pieces with a brief explanation. Provide only a single sentence summary.")
-    
-    # Print response for debugging
-    print("Raw response:", response.text)
-    
+    response = gemini.generate_content(f"In a Classic Chess game, based on notation: {move_history} analyze and make a critique of the last white pieces move with a brief explanation. Provide only a single sentence summary.")
+
+
     # Ensure response is a single sentence
     analysis = response.text.strip()
     return analysis
