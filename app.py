@@ -93,9 +93,63 @@ with col1:
     board_svg = chess.svg.board(board=st.session_state.board)
     st.markdown(f'<div>{board_svg}</div>', unsafe_allow_html=True)
 
+    if not st.session_state.game_over:
+        if st.session_state.board.turn == chess.WHITE:
+            user_move = st.text_input("Digite seu movimento (ex: e2e4):")
+            if st.button("Enviar Movimento"):
+                move = None
+                try:
+                    move = chess.Move.from_uci(user_move)
+                    if move in st.session_state.board.legal_moves:
+                        st.session_state.board.push(move)
+                        st.experimental_rerun()
+                    else:
+                        st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
+                except Exception as e:
+                    st.write(f"Erro ao processar o movimento: {str(e)}")
+        else:
+            st.write("Turno do bot...")
+            bot_move()
+            st.experimental_rerun()
+    else:
+        st.write(st.session_state.end_message)
+
+    if st.button("Reiniciar Jogo"):
+        st.session_state.board.reset()
+        st.session_state.game_over = False
+        st.session_state.end_message = ""
+        st.experimental_rerun()
+
+
 # Right column: Suggested moves and Game History
 with col2:
-    st.markdown('<div class="suggested-moves-title">Sugestões de Movimentos</div>', unsafe_allow_html=True)
+    # Game History section logo abaixo
+
+    moves = st.session_state.board.move_stack
+    move_history = ""
+    evaluation = ""
+    for i, move in enumerate(moves):
+        move_history += f"{i+1}. {move.uci()} - "
+        if i % 2 == 0:
+            evaluation = coach_answer(move_history)
+
+    move_history = move_history.rstrip(" - ")
+
+
+
+
+
+    st.markdown(f'''
+        <div class="move-analysis-card">
+            <div class="top-line" style="background-color: blue;"></div>
+            <div class="piece-icon">&#9817;</div>
+            <p>{evaluation}</p>
+        </div>
+    ''', unsafe_allow_html=True)
+
+    # Suggested Moves section with four cards side by side
+    st.markdown('<div class="suggested-moves-title">Suggested Moves</div>', unsafe_allow_html=True)
+    st.markdown('<div class="suggested-moves-container">', unsafe_allow_html=True)
     best_moves = suggest_best_moves_for_white(st.session_state.board, num_moves=2)
 
     col_moves1, col_moves2 = st.columns(2)  # Ajusta as sugestões de movimentos para ficarem lado a lado
@@ -118,60 +172,11 @@ with col2:
                 </div>
             ''', unsafe_allow_html=True)
 
-    # Game History section logo abaixo
-    st.markdown("---")  # Linha separadora
     st.header("Game History")
-    moves = st.session_state.board.move_stack
-    move_history = ""
-    for i, move in enumerate(moves):
-
-        move_history += f"{i+1}. {move.uci()}\n"
-        st.text_area("", move_history, height=50)  # Removed "Moves" text
-    st.write(st.session_state.evaluation_message)
+    st.text_area("", move_history, height=50)
 
 
-if not st.session_state.game_over:
-    if st.session_state.board.turn == chess.WHITE:
 
-        fen = st.session_state.board.fen()
-        print(fen)
-
-        user_move = st.text_input("Digite seu movimento (ex: e2e4):")
-        if st.button("Enviar Movimento"):
-            move = None
-            try:
-                move = chess.Move.from_uci(user_move)
-                print(move)
-                if move in st.session_state.board.legal_moves:
-                    coach_answer(fen, move)
-                    st.session_state.board.push(move)
-
-                    raw_evaluation = evaluate_move(st.session_state.board)
-                    formatted_evaluation = format_evaluation(raw_evaluation)
-                    interpreted_evaluation = interpret_evaluation(raw_evaluation)
-                    st.session_state.evaluation_message = (
-                        f"Avaliação do último movimento do humano: {interpreted_evaluation} ({formatted_evaluation})"
-                    )
-
-                    st.experimental_rerun()
-                else:
-                    st.write("Movimento inválido. Use a notação correta (ex: e2e4).")
-
-            except Exception as e:
-                st.write(f"Erro ao processar o movimento: {str(e)}")
-    else:
-        st.write("Turno do bot...")
-        bot_move()
-        st.experimental_rerun()
-
-else:
-    st.write(st.session_state.end_message)
-
-if st.button("Reiniciar Jogo"):
-    st.session_state.board.reset()
-    st.session_state.game_over = False
-    st.session_state.end_message = ""
-    st.experimental_rerun()
 
 # CSS Customization for the layout
 st.markdown(
