@@ -50,6 +50,12 @@ if "end_message" not in st.session_state:
     st.session_state.end_message = ""
 if "evaluation_message" not in st.session_state:
     st.session_state.evaluation_message = ""
+if 'show_suggested' not in st.session_state:
+    st.session_state.show_suggested = False    
+if 'show_coach' not in st.session_state:
+    st.session_state.show_coach = False    
+def toggle_suggested():
+    st.session_state.show_suggested = not st.session_state.show_suggested
 
 def bot_move():
     if st.session_state.board.is_checkmate():
@@ -120,18 +126,28 @@ with col1:
         st.session_state.end_message = ""
         st.experimental_rerun()
 
-
+def toggle_coach():
+    st.session_state.show_coach = not st.session_state.show_coach
 # Right column: Suggested moves and Game History
 with col2:
     # Game History section logo abaixo
-
     moves = st.session_state.board.move_stack
     move_history = ""
     evaluation = ""
+    button_label = "Show Coach Analysis" if not st.session_state.show_coach else "Hide Coach Analysis"
+    if st.button(button_label, on_click=toggle_coach, key="coach"):
+        pass
     for i, move in enumerate(moves):
-        move_history += f"{i+1}. {move.uci()} - "
-        if i % 2 == 0:
-            evaluation = coach_answer(move_history)
+            move_history += f"{i+1}. {move.uci()} - " 
+    if st.session_state.show_coach:
+        st.write("This is an AI analysis of the last move")     
+        for i, move in enumerate(moves):
+            if i % 2 == 0:     
+                evaluation = coach_answer(move_history)
+    else:
+        st.write(" ")
+        
+            
 
     move_history = move_history.rstrip(" - ")
 
@@ -147,30 +163,37 @@ with col2:
         </div>
     ''', unsafe_allow_html=True)
 
-    # Suggested Moves section with four cards side by side
-    st.markdown('<div class="suggested-moves-title">Suggested Moves</div>', unsafe_allow_html=True)
-    st.markdown('<div class="suggested-moves-container">', unsafe_allow_html=True)
-    best_moves = suggest_best_moves_for_white(st.session_state.board, num_moves=2)
+    # Suggested Moves section with two cards side by side
+    button_label = "Show Suggested Moves" if not st.session_state.show_suggested else "Hide Suggested Moves"
+    if st.button(button_label, on_click=toggle_suggested, key="suggested"):
+        pass
+    if st.session_state.show_suggested:
+        st.write("These are some AI based suggested moves")
+        st.markdown('<div class="suggested-moves-title">Suggested Moves</div>', unsafe_allow_html=True)
+        st.markdown('<div class="suggested-moves-container">', unsafe_allow_html=True)
+        best_moves = suggest_best_moves_for_white(st.session_state.board, num_moves=2)
 
-    col_moves1, col_moves2 = st.columns(2)  # Ajusta as sugestões de movimentos para ficarem lado a lado
+        col_moves1, col_moves2 = st.columns(2)  # Ajusta as sugestões de movimentos para ficarem lado a lado
 
-    if len(best_moves) > 0:
-        with col_moves1:
-            st.markdown(f'''
-                <div class="suggested-move-card">
-                    <h4>{best_moves[0][0].uci()}</h4>
-                    <p>Score: {best_moves[0][1]:.2f}</p>
-                </div>
-            ''', unsafe_allow_html=True)
+        if len(best_moves) > 0:
+            with col_moves1:
+                st.markdown(f'''
+                    <div class="suggested-move-card">
+                        <h4>{best_moves[0][0].uci()}</h4>
+                        <p>Score: {best_moves[0][1]:.2f}</p>
+                    </div>
+                ''', unsafe_allow_html=True)
 
-    if len(best_moves) > 1:
-        with col_moves2:
-            st.markdown(f'''
-                <div class="suggested-move-card">
-                    <h4>{best_moves[1][0].uci()}</h4>
-                    <p>Score: {best_moves[1][1]:.2f}</p>
-                </div>
-            ''', unsafe_allow_html=True)
+        if len(best_moves) > 1:
+            with col_moves2:
+                st.markdown(f'''
+                    <div class="suggested-move-card">
+                        <h4>{best_moves[1][0].uci()}</h4>
+                        <p>Score: {best_moves[1][1]:.2f}</p>
+                    </div>
+                ''', unsafe_allow_html=True)
+    else:
+        st.write(" ")
 
     st.header("Game History")
     st.text_area("", move_history, height=50)
