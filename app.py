@@ -180,7 +180,7 @@ with col2:
                 st.markdown(f'''
                     <div class="suggested-move-card">
                         <h4>{best_moves[0][0].uci()}</h4>
-                        <p>Score: {best_moves[0][1]:.2f}</p>
+                        <p>Lead: {best_moves[0][1]:.2f}</p>
                     </div>
                 ''', unsafe_allow_html=True)
 
@@ -189,7 +189,7 @@ with col2:
                 st.markdown(f'''
                     <div class="suggested-move-card">
                         <h4>{best_moves[1][0].uci()}</h4>
-                        <p>Score: {best_moves[1][1]:.2f}</p>
+                        <p>Lead: {best_moves[1][1]:.2f}</p>
                     </div>
                 ''', unsafe_allow_html=True)
     else:
